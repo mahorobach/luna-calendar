@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>LunaCalendar Text Generator</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">LunaCalendar</p>
+        <h1>テキスト生成ツール</h1>
+      </div>
+      <div class="header-actions">
+        <button id="loadSampleButton" type="button">サンプル読込</button>
+        <button id="generateButton" type="button" class="primary">生成</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="panel controls" aria-labelledby="settings-heading">
+        <h2 id="settings-heading">対象</h2>
+        <div class="field-grid">
+          <label>
+            年
+            <input id="yearInput" type="number" min="1900" max="2100" value="2027">
+          </label>
+          <label>
+            月
+            <select id="monthInput">
+              <option value="all">12か月</option>
+              <option value="1">1月</option>
+              <option value="2">2月</option>
+              <option value="3">3月</option>
+              <option value="4">4月</option>
+              <option value="5">5月</option>
+              <option value="6">6月</option>
+              <option value="7">7月</option>
+              <option value="8">8月</option>
+              <option value="9">9月</option>
+              <option value="10">10月</option>
+              <option value="11">11月</option>
+              <option value="12">12月</option>
+            </select>
+          </label>
+        </div>
+        <p class="note">
+          旧暦・24節気・祝日は、確認済みデータをCSVで入れてください。アプリは日付を推測せず、整形と統合だけ行います。
+        </p>
+      </section>
+
+      <section class="panel data-panel" aria-labelledby="data-heading">
+        <div class="section-title">
+          <h2 id="data-heading">入力データ</h2>
+          <button id="clearDataButton" type="button">入力を空にする</button>
+        </div>
+
+        <div class="tabs" role="tablist" aria-label="入力データ">
+          <button class="tab active" type="button" data-target="holidays">祝日</button>
+          <button class="tab" type="button" data-target="terms">24節気</button>
+          <button class="tab" type="button" data-target="lunar">旧暦</button>
+          <button class="tab" type="button" data-target="events">年間行事</button>
+        </div>
+
+        <div class="tab-panel active" id="panel-holidays">
+          <div class="import-row">
+            <label class="file-button">
+              CSV読込
+              <input type="file" accept=".csv,text/csv" data-file-target="holidaysInput">
+            </label>
+            <p>列: <code>date,name</code></p>
+          </div>
+          <textarea id="holidaysInput" spellcheck="false" placeholder="date,name&#10;2027-01-01,元日"></textarea>
+        </div>
+
+        <div class="tab-panel" id="panel-terms">
+          <div class="import-row">
+            <label class="file-button">
+              CSV読込
+              <input type="file" accept=".csv,text/csv" data-file-target="termsInput">
+            </label>
+            <p>列: <code>date,name</code></p>
+          </div>
+          <textarea id="termsInput" spellcheck="false" placeholder="date,name&#10;2027-01-05,小寒"></textarea>
+        </div>
+
+        <div class="tab-panel" id="panel-lunar">
+          <div class="import-row">
+            <label class="file-button">
+              CSV読込
+              <input type="file" accept=".csv,text/csv" data-file-target="lunarInput">
+            </label>
+            <p>列: <code>date,lunar_month,lunar_day,leap</code></p>
+          </div>
+          <textarea id="lunarInput" spellcheck="false" placeholder="date,lunar_month,lunar_day,leap&#10;2027-01-01,12,24,false"></textarea>
+        </div>
+
+        <div class="tab-panel" id="panel-events">
+          <div class="import-row">
+            <label class="file-button">
+              CSV読込
+              <input type="file" accept=".csv,text/csv" data-file-target="eventsInput">
+            </label>
+            <p>列: <code>type,month,day,name</code> または <code>date,name</code></p>
+          </div>
+          <textarea id="eventsInput" spellcheck="false" placeholder="type,month,day,name&#10;lunar,1,1,旧正月節・弥勒祖師聖誕日&#10;gregorian,1,1,［丁未年］"></textarea>
+        </div>
+      </section>
+
+      <section class="panel warnings-panel" aria-labelledby="warnings-heading">
+        <h2 id="warnings-heading">確認</h2>
+        <ul id="warningsList" class="warnings-list">
+          <li>生成すると確認結果が表示されます。</li>
+        </ul>
+      </section>
+
+      <section class="outputs" aria-label="出力">
+        <article class="output-card">
+          <div class="output-header">
+            <h2>weekday.txt</h2>
+            <div>
+              <button type="button" data-copy="weekdayOutput">コピー</button>
+              <button type="button" data-download="weekdayOutput" data-name="weekday">保存</button>
+            </div>
+          </div>
+          <textarea id="weekdayOutput" readonly spellcheck="false"></textarea>
+        </article>
+
+        <article class="output-card">
+          <div class="output-header">
+            <h2>youbi.txt</h2>
+            <div>
+              <button type="button" data-copy="youbiOutput">コピー</button>
+              <button type="button" data-download="youbiOutput" data-name="youbi">保存</button>
+            </div>
+          </div>
+          <textarea id="youbiOutput" readonly spellcheck="false"></textarea>
+        </article>
+
+        <article class="output-card">
+          <div class="output-header">
+            <h2>kyureki.txt</h2>
+            <div>
+              <button type="button" data-copy="kyurekiOutput">コピー</button>
+              <button type="button" data-download="kyurekiOutput" data-name="kyureki">保存</button>
+            </div>
+          </div>
+          <textarea id="kyurekiOutput" readonly spellcheck="false"></textarea>
+        </article>
+
+        <article class="output-card wide">
+          <div class="output-header">
+            <h2>cell.txt</h2>
+            <div>
+              <button type="button" data-copy="cellOutput">コピー</button>
+              <button type="button" data-download="cellOutput" data-name="cell">保存</button>
+            </div>
+          </div>
+          <textarea id="cellOutput" readonly spellcheck="false"></textarea>
+        </article>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
