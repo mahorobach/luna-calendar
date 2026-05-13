@@ -399,7 +399,7 @@
   function buildWeekdayText(month, rows, includeMonthHeader) {
     const lines = includeMonthHeader ? [monthHeader(month)] : [];
     rows.forEach((row) => {
-      lines.push(`${row.day}${row.termNames.map((name) => `\t【${name}】`).join("")}`);
+      lines.push(`${row.day}${row.termNames.map((name) => `\t[${name}]`).join("")}`);
       lines.push(row.weekday);
     });
     return lines.join("\n");
@@ -410,7 +410,7 @@
     rows.forEach((row) => {
       const top = [
         ...row.holidayNames.map((name) => `[${name}]`),
-        ...row.termNames.map((name) => `【${name}】`),
+        ...row.termNames.map((name) => `[${name}]`),
         ...row.seasonNames.map((name) => `[${name}]`),
       ];
       lines.push(top.length ? `\t${top.join("\t")}` : "");
@@ -449,7 +449,7 @@
       const top = [
         String(row.day),
         ...row.holidayNames.map((name) => `[${name}]`),
-        ...row.termNames.map((name) => `【${name}】`),
+        ...row.termNames.map((name) => `[${name}]`),
         ...row.seasonNames.map((name) => `[${name}]`),
         ...row.worship,
         ...row.eventNames,
