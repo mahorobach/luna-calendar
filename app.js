@@ -361,7 +361,10 @@
       const weekday = WEEKDAYS[new Date(year, month - 1, day).getDay()];
       const lunar = data.lunar.get(date);
       const holidayNames = data.holidays.get(date) || [];
-      const termNames = data.terms.get(date) || [];
+      const termNames = [
+        ...(data.terms.get(date) || []),
+        ...getCalendarTermLikeNames(year, month, day),
+      ];
       const seasonNames = getHiganNames(date, data.terms);
       const eventNames = getEventNames(date, lunar, data.events, data.lunar);
       const worship = lunar && (lunar.day === 1 || lunar.day === 15) ? ["焼香礼拝日"] : [];
@@ -631,6 +634,26 @@
       if (diff === 3) names.push("彼岸明け");
     }
     return names;
+  }
+
+  function getCalendarTermLikeNames(year, month, day) {
+    const names = [];
+    if (month === 5 && day === nthWeekdayOfMonth(year, 5, 0, 2)) names.push("母の日");
+    if (month === 6 && day === nthWeekdayOfMonth(year, 6, 0, 3)) names.push("父の日");
+    if (month === 11 && day === 15) names.push("七五三");
+    if (month === 12 && day === 25) names.push("クリスマス");
+    return names;
+  }
+
+  function nthWeekdayOfMonth(year, month, weekday, ordinal) {
+    let count = 0;
+    const days = daysInMonth(year, month);
+    for (let day = 1; day <= days; day += 1) {
+      if (new Date(year, month - 1, day).getDay() !== weekday) continue;
+      count += 1;
+      if (count === ordinal) return day;
+    }
+    return 0;
   }
 
   function isLunarNewYearEve(date, lunarMap) {
