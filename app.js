@@ -16,6 +16,8 @@
     "DECEMBER",
   ];
   const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
+  const HEAVENLY_STEMS = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"];
+  const EARTHLY_BRANCHES = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
   const KYUREKI_SPACER = "\t\t\t\t\t\t\t";
   const OFFICIAL_API = {
     holidays: "/api/holidays",
@@ -24,6 +26,7 @@
   };
 
   const DEFAULT_EVENTS = [
+    ["gregorian", "1", "1", "静化菩薩聖誕日(新暦)"],
     ["lunar", "1", "1", "旧正月節・弥勒祖師聖誕日"],
     ["lunar", "2", "1", "金公祖師殯天日"],
     ["lunar", "2", "19", "南海古佛聖誕日"],
@@ -90,11 +93,7 @@
       "2027-01-30,12,23,false",
       "2027-01-31,12,24,false",
     ].join("\n"),
-    events: [
-      "type,month,day,name",
-      "gregorian,1,1,［丁未年］",
-      ...DEFAULT_EVENTS.map((row) => row.join(",")),
-    ].join("\n"),
+    events: defaultEventsCsv(2027),
   };
 
   const elements = {
@@ -192,6 +191,25 @@
     setWarnings(["入力を空にしました。"], false);
   }
 
+  function defaultEventsCsv(year) {
+    return [
+      "type,month,day,name",
+      `gregorian,1,1,［${sexagenaryYearName(year)}］`,
+      ...DEFAULT_EVENTS.map((row) => row.join(",")),
+    ].join("\n");
+  }
+
+  function sexagenaryYearName(year) {
+    const offset = year - 1984;
+    const stem = HEAVENLY_STEMS[positiveModulo(offset, HEAVENLY_STEMS.length)];
+    const branch = EARTHLY_BRANCHES[positiveModulo(offset, EARTHLY_BRANCHES.length)];
+    return `${stem}${branch}年`;
+  }
+
+  function positiveModulo(value, divisor) {
+    return ((value % divisor) + divisor) % divisor;
+  }
+
   async function fetchAllOfficialData() {
     const year = Number(elements.year.value);
     if (!isSupportedYear(year)) {
@@ -209,8 +227,10 @@
       elements.terms.value = await fetchOfficialCsv("terms", year);
     });
     await runOfficialFetch(status, "旧暦", async () => {
-      elements.lunar.value = await fetchLunarCsvForSelection(year);
+      elements.lunar.value = await fetchLunarCsvForMonths(year, allMonths());
     });
+    elements.events.value = defaultEventsCsv(year);
+    status.push("年間行事を準備しました。");
 
     const failed = status.some((item) => item.includes("取得できませんでした"));
     setWarnings(status, !failed);
@@ -297,7 +317,10 @@
   }
 
   async function fetchLunarCsvForSelection(year) {
-    const months = selectedMonths();
+    return fetchLunarCsvForMonths(year, selectedMonths());
+  }
+
+  async function fetchLunarCsvForMonths(year, months) {
     const csvTexts = [];
     for (const month of months) {
       setWarnings([`${year}年${month}月の旧暦CSVを取得しています。`], true);
@@ -306,9 +329,13 @@
     return combineCsvTexts(csvTexts);
   }
 
+  function allMonths() {
+    return Array.from({ length: 12 }, (_, index) => index + 1);
+  }
+
   function selectedMonths() {
     return elements.month.value === "all"
-      ? Array.from({ length: 12 }, (_, index) => index + 1)
+      ? allMonths()
       : [Number(elements.month.value)];
   }
 
@@ -643,8 +670,10 @@
     if (month === 3 && day === 3) names.push("ひな祭り");
     if (month === 5 && day === nthWeekdayOfMonth(year, 5, 0, 2)) names.push("母の日");
     if (month === 6 && day === nthWeekdayOfMonth(year, 6, 0, 3)) names.push("父の日");
+    if (month === 7 && day === 7) names.push("七夕");
     if (month === 11 && day === 15) names.push("七五三");
     if (month === 12 && day === 25) names.push("クリスマス");
+    if (month === 12 && day === 31) names.push("大晦日");
     return names;
   }
 

@@ -224,7 +224,7 @@ main
 - 「祝日を取得」ボタンで内閣府の祝日CSVを取得し、`date,name` 形式へ変換する。
 - 「24節気を取得」ボタンで国立天文台の暦要項HTMLを取得し、24節気を `date,name` 形式へ変換する。
 - 「旧暦を取得」ボタンでJapanese Calendar APIの旧暦データを取得し、`date,lunar_month,lunar_day,leap` 形式へ変換する。
-- 通常操作用に「公式データを取得」ボタンを追加し、祝日・24節気・旧暦を一括取得する。
+- 通常操作用に「公式データを取得」ボタンを追加し、祝日・24節気・旧暦1年分を一括取得し、年間行事CSVも準備する。
 - 個別に取り直すため、祝日・24節気・旧暦の小ボタンも残す。
 - Cloudflare Pages Functionsの `/api/holidays`、`/api/solar-terms`、`/api/lunar` を使う。
 
