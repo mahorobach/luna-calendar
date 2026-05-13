@@ -411,6 +411,7 @@
         holidayNames,
         termNames,
         seasonNames,
+        lunarDay: lunar ? lunar.day : null,
         worship,
         eventNames,
       });
@@ -451,7 +452,7 @@
   function buildKyurekiCalText(month, rows, includeMonthHeader) {
     const lines = includeMonthHeader ? [monthHeader(month)] : [];
     rows.forEach((row, index) => {
-      const content = [...row.worship, ...row.eventNames, row.lunarText].filter(Boolean);
+      const content = [...kyurekiCalEventLines(row), row.lunarText].filter(Boolean);
       lines.push(content.join("\n"));
       const next = rows[index + 1];
       if (next && !hasKyurekiEvent(next)) lines.push("");
@@ -460,16 +461,28 @@
   }
 
   function hasKyurekiEvent(row) {
-    return row.worship.length > 0 || row.eventNames.length > 0;
+    return kyurekiCalEventLines(row).length > 0;
+  }
+
+  function kyurekiCalEventLines(row) {
+    if (row.eventNames.length === 0) return row.worship;
+    if (row.worship.length === 0) return row.eventNames;
+    if (row.lunarDay === 15) return row.eventNames;
+    return [`${row.worship.join("・")}・${row.eventNames.join("・")}`];
   }
 
   function buildKyurekiListText(rows) {
     const lines = ["新暦\t旧暦\t行事"];
     rows.forEach((row) => {
-      const events = [...row.worship, ...row.eventNames];
+      const events = kyurekiEventNames(row);
       lines.push([row.date, row.lunarText, events.join("・")].join("\t"));
     });
     return lines.join("\n");
+  }
+
+  function kyurekiEventNames(row) {
+    if (row.eventNames.length > 0 && row.lunarDay === 15) return row.eventNames;
+    return [...row.worship, ...row.eventNames];
   }
 
   function buildCellText(month, rows, includeMonthHeader) {
