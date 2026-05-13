@@ -18,7 +18,7 @@ AIだけで暦を作成すると、旧暦・24節気・祝日・行事日の誤�
 
 ## 作成するテキストファイル
 
-毎月4種類のテキストファイルを作成する。
+毎月5種類のテキストファイルを作成する。
 
 1. `weekday.txt`
    - 日付・曜日・24節気
@@ -27,13 +27,18 @@ AIだけで暦を作成すると、旧暦・24節気・祝日・行事日の誤�
    - 曜日・日本の国民の祝日・24節気・雑節
    - 日付数字は入れない
 
-3. `kyureki.txt`
+3. `kyureki_cal.txt`
    - 旧暦日付
    - 旧暦行事
    - 焼香礼拝日
    - 十干十二支
 
-4. `cell.txt`
+4. `kyureki.txt`
+   - 新暦
+   - 旧暦
+   - 仏さまの聖誕日や殯天日などの年間行事
+
+5. `cell.txt`
    - 年間行事予定表PDFの1日1セル表示用
    - 上記3ファイルの内容を日付ごとに統合する
 
@@ -84,11 +89,11 @@ AIだけで暦を作成すると、旧暦・24節気・祝日・行事日の誤�
 
 ## 今後作るとよいもの
 
-- 暦データを読み込んで4種類のテキストを生成するスクリプト。
+- 暦データを読み込んで5種類のテキストを生成するスクリプト。
 - 内閣府の祝日CSVを取り込む処理。
 - 24節気・春分・秋分・朔弦望データを取り込む処理。
 - 旧暦データをCSVまたはJSONで管理する仕組み。
-- 生成後に、`weekday.txt`、`youbi.txt`、`kyureki.txt`、`cell.txt` の整合性をチェックする検証処理。
+- 生成後に、`weekday.txt`、`youbi.txt`、`kyureki_cal.txt`、`kyureki.txt`、`cell.txt` の整合性をチェックする検証処理。
 
 ## 注意点
 
@@ -124,8 +129,9 @@ Illustratorに流し込むための 1〜4 のテキストデータを、流れ�
 ```text
 weekday.txt  -> Illustratorの日付・曜日・24節気レイヤー用
 youbi.txt    -> Illustratorの祝日・節気・雑節レイヤー用
-kyureki.txt  -> Illustratorの旧暦・年間行事レイヤー用
-cell.txt     -> 1日1セル表示の確認用・次段階展開用
+kyureki_cal.txt -> Illustratorの旧暦・年間行事レイヤー用
+kyureki.txt     -> 新暦・旧暦・年間行事の一覧用
+cell.txt        -> 1日1セル表示の確認用・次段階展開用
 ```
 
 `cell.txt` はIllustratorへ直接流し込む主データではなく、1〜3の内容を日付ごとにまとめて確認するための統合データとして重要。
@@ -143,7 +149,7 @@ cell.txt     -> 1日1セル表示の確認用・次段階展開用
 - 対象年と対象月を選ぶ。
 - 祝日CSV、24節気CSV、旧暦CSV、年間行事CSVを貼り付けまたは読み込む。
 - 1か月分または12か月分を生成する。
-- `weekday.txt`、`youbi.txt`、`kyureki.txt`、`cell.txt` を画面表示する。
+- `weekday.txt`、`youbi.txt`、`kyureki_cal.txt`、`kyureki.txt`、`cell.txt` を画面表示する。
 - 各出力をコピーまたは保存する。
 
 入力CSVの基本形式:
@@ -196,7 +202,7 @@ main
 1. 2027年など対象年を決める。
 2. 祝日、24節気、旧暦の確認済みCSVを用意する。
 3. 1か月分で生成結果とIllustratorへの流し込みを確認する。
-4. `weekday.txt`、`youbi.txt`、`kyureki.txt` の形式が既存Illustratorデータと完全に合うか調整する。
+4. `weekday.txt`、`youbi.txt`、`kyureki_cal.txt` の形式が既存Illustratorデータと完全に合うか調整する。
 5. `cell.txt` で行事・旧暦・焼香礼拝日・彼岸の整合性を確認する。
 6. 問題なければ12か月分に広げる。
 

@@ -107,6 +107,7 @@
     warnings: document.getElementById("warningsList"),
     weekday: document.getElementById("weekdayOutput"),
     youbi: document.getElementById("youbiOutput"),
+    kyurekiCal: document.getElementById("kyurekiCalOutput"),
     kyureki: document.getElementById("kyurekiOutput"),
     cell: document.getElementById("cellOutput"),
   };
@@ -184,6 +185,7 @@
     elements.events.value = "";
     elements.weekday.value = "";
     elements.youbi.value = "";
+    elements.kyurekiCal.value = "";
     elements.kyureki.value = "";
     elements.cell.value = "";
     setWarnings(["入力を空にしました。"], false);
@@ -284,7 +286,8 @@
 
     elements.weekday.value = outputs.map((output) => output.weekday).join("\n\n");
     elements.youbi.value = outputs.map((output) => output.youbi).join("\n\n");
-    elements.kyureki.value = outputs.map((output) => output.kyureki).join("\n\n");
+    elements.kyurekiCal.value = outputs.map((output) => output.kyurekiCal).join("\n\n");
+    elements.kyureki.value = outputs.map((output) => output.kyureki).join("\n");
     elements.cell.value = outputs.map((output) => output.cell).join("\n\n");
 
     setWarnings(warnings.length ? warnings : ["生成しました。目立つ不足はありません。"], warnings.length === 0);
@@ -338,7 +341,8 @@
     return {
       weekday: buildWeekdayText(month, rows),
       youbi: buildYoubiText(month, rows),
-      kyureki: buildKyurekiText(month, rows),
+      kyurekiCal: buildKyurekiCalText(month, rows),
+      kyureki: buildKyurekiListText(rows),
       cell: buildCellText(month, rows),
     };
   }
@@ -366,12 +370,26 @@
     return lines.join("\n");
   }
 
-  function buildKyurekiText(month, rows) {
+  function buildKyurekiCalText(month, rows) {
     const lines = [monthHeader(month)];
     rows.forEach((row, index) => {
       const content = [...row.worship, ...row.eventNames, row.lunarText].filter(Boolean);
       lines.push(content.join("\n"));
-      if (index < rows.length - 1) lines.push("");
+      const next = rows[index + 1];
+      if (next && !hasKyurekiEvent(next)) lines.push("");
+    });
+    return lines.join("\n");
+  }
+
+  function hasKyurekiEvent(row) {
+    return row.worship.length > 0 || row.eventNames.length > 0;
+  }
+
+  function buildKyurekiListText(rows) {
+    const lines = ["新暦\t旧暦\t行事"];
+    rows.forEach((row) => {
+      const events = [...row.worship, ...row.eventNames];
+      lines.push([row.date, row.lunarText, events.join("・")].join("\t"));
     });
     return lines.join("\n");
   }
@@ -550,7 +568,7 @@
         }
         if (!lunar) return false;
         if (event.type === "lunar-last") {
-          return lunar.month === event.month && isLastLunarDay(date, lunar, lunarMap);
+          return lunar.month === event.month && isLunarNewYearEve(date, lunarMap);
         }
         return lunar.month === event.month && lunar.day === event.day && !lunar.leap;
       })
@@ -570,11 +588,11 @@
     return names;
   }
 
-  function isLastLunarDay(date, lunar, lunarMap) {
+  function isLunarNewYearEve(date, lunarMap) {
     const nextDate = new Date(`${date}T00:00:00`);
     nextDate.setDate(nextDate.getDate() + 1);
     const next = lunarMap.get(toDateKey(nextDate));
-    return !next || next.month !== lunar.month || next.leap !== lunar.leap;
+    return next && next.month === 1 && next.day === 1 && !next.leap;
   }
 
   function formatLunar(month, day, leap) {
