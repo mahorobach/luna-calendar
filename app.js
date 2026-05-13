@@ -26,7 +26,7 @@
   };
 
   const DEFAULT_EVENTS = [
-    ["lunar", "1", "1", "旧正月節・弥勒祖師聖誕日"],
+    ["gregorian", "3", "6", "静化菩薩殯天日"],
     ["lunar", "2", "1", "金公祖師殯天日"],
     ["lunar", "2", "19", "南海古佛聖誕日"],
     ["lunar", "2", "23", "師母様殯天日"],
@@ -193,7 +193,8 @@
   function defaultEventsCsv(year) {
     return [
       "type,month,day,name",
-      `gregorian,1,1,静化菩薩聖誕日(新暦) ［${sexagenaryYearName(year)}］`,
+      `gregorian,1,1,静化菩薩聖誕日(新暦) ［${sexagenaryYearName(year - 1)}］`,
+      `lunar,1,1,旧正月節・弥勒祖師聖誕日 ［${sexagenaryYearName(year)}］`,
       ...DEFAULT_EVENTS.map((row) => row.join(",")),
     ].join("\n");
   }
@@ -706,7 +707,7 @@
 
   function formatLunar(month, day, leap) {
     const monthText = leap ? `閏${month}月` : month === 1 ? "旧正月" : `旧${month}月`;
-    const dayText = day <= 9 ? `初${day}日` : `${day}日`;
+    const dayText = day <= 10 ? `初${day}日` : `${day}日`;
     return `${monthText}${dayText}`;
   }
 
