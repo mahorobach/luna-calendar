@@ -168,7 +168,7 @@ date,lunar_month,lunar_day,leap
 type,month,day,name
 lunar,1,1,旧正月節・弥勒祖師聖誕日
 lunar-last,12,,旧大晦日
-gregorian,1,1,［丁未年］
+gregorian,1,1,静化菩薩聖誕日(新暦) ［丁未年］
 ```
 
 旧暦表記は `rules.md` のルールに沿って整形する。

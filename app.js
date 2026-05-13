@@ -26,7 +26,6 @@
   };
 
   const DEFAULT_EVENTS = [
-    ["gregorian", "1", "1", "静化菩薩聖誕日(新暦)"],
     ["lunar", "1", "1", "旧正月節・弥勒祖師聖誕日"],
     ["lunar", "2", "1", "金公祖師殯天日"],
     ["lunar", "2", "19", "南海古佛聖誕日"],
@@ -194,7 +193,7 @@
   function defaultEventsCsv(year) {
     return [
       "type,month,day,name",
-      `gregorian,1,1,［${sexagenaryYearName(year)}］`,
+      `gregorian,1,1,静化菩薩聖誕日(新暦) ［${sexagenaryYearName(year)}］`,
       ...DEFAULT_EVENTS.map((row) => row.join(",")),
     ].join("\n");
   }
