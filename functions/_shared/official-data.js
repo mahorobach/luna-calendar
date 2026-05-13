@@ -1,8 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
-import { join } from "node:path";
-import { pathToFileURL } from "node:url";
-
-const SOLAR_TERMS = [
+export const SOLAR_TERMS = [
   "小寒",
   "大寒",
   "立春",
@@ -28,47 +24,6 @@ const SOLAR_TERMS = [
   "大雪",
   "冬至",
 ];
-
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  await main();
-}
-
-async function main() {
-  const year = Number(process.argv[2]);
-
-  if (!isSupportedYear(year)) {
-    console.error("Usage: node tools/fetch-official-data.mjs 2027");
-    process.exit(1);
-  }
-
-  const outputDir = join("data", "generated", String(year));
-  const paths = await createOfficialDataFiles(year, outputDir);
-
-  console.log(`created ${paths.holidays}`);
-  console.log(`created ${paths.solarTerms}`);
-  console.log("旧暦CSVは、AJNET等で確認したデータを別途用意してください。");
-}
-
-export async function createOfficialDataFiles(targetYear, outputDir) {
-  if (!isSupportedYear(targetYear)) {
-    throw new Error("Year must be an integer from 1900 to 2100.");
-  }
-
-  await mkdir(outputDir, { recursive: true });
-
-  const holidays = await fetchOfficialHolidaysCsv(targetYear);
-  const terms = await fetchOfficialSolarTermsCsv(targetYear);
-  const holidaysPath = join(outputDir, "holidays.csv");
-  const solarTermsPath = join(outputDir, "solar_terms.csv");
-
-  await writeFile(holidaysPath, holidays, "utf8");
-  await writeFile(solarTermsPath, terms, "utf8");
-
-  return {
-    holidays: holidaysPath,
-    solarTerms: solarTermsPath,
-  };
-}
 
 export async function fetchOfficialHolidaysCsv(targetYear) {
   const url = "https://www8.cao.go.jp/chosei/shukujitsu/syukujitsu.csv";
@@ -110,6 +65,37 @@ export async function fetchOfficialSolarTermsCsv(targetYear) {
   }
 
   return toCsv(output);
+}
+
+export function getYearFromRequest(request) {
+  const url = new URL(request.url);
+  const year = Number(url.searchParams.get("year"));
+  if (!isSupportedYear(year)) {
+    throw new Error("year must be an integer from 1900 to 2100");
+  }
+  return year;
+}
+
+export function csvResponse(csv) {
+  return new Response(csv, {
+    headers: {
+      "Cache-Control": "public, max-age=86400",
+      "Content-Type": "text/csv; charset=utf-8",
+    },
+  });
+}
+
+export function errorResponse(error) {
+  return new Response(String(error.message || error), {
+    status: 500,
+    headers: {
+      "Content-Type": "text/plain; charset=utf-8",
+    },
+  });
+}
+
+function isSupportedYear(year) {
+  return Number.isInteger(year) && year >= 1900 && year <= 2100;
 }
 
 async function fetchText(url) {
@@ -183,10 +169,6 @@ function normalizeDate(value) {
   const match = normalized.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
   if (!match) return "";
   return `${match[1]}-${pad2(match[2])}-${pad2(match[3])}`;
-}
-
-export function isSupportedYear(year) {
-  return Number.isInteger(year) && year >= 1900 && year <= 2100;
 }
 
 function toCsv(rows) {

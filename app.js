@@ -17,33 +17,10 @@
   ];
   const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
   const KYUREKI_SPACER = "\t\t\t\t\t\t\t";
-  const HOLIDAY_CSV_URL = "https://www8.cao.go.jp/chosei/shukujitsu/syukujitsu.csv";
-  const SOLAR_TERMS = [
-    "小寒",
-    "大寒",
-    "立春",
-    "雨水",
-    "啓蟄",
-    "春分",
-    "清明",
-    "穀雨",
-    "立夏",
-    "小満",
-    "芒種",
-    "夏至",
-    "小暑",
-    "大暑",
-    "立秋",
-    "処暑",
-    "白露",
-    "秋分",
-    "寒露",
-    "霜降",
-    "立冬",
-    "小雪",
-    "大雪",
-    "冬至",
-  ];
+  const OFFICIAL_API = {
+    holidays: "/api/holidays",
+    terms: "/api/solar-terms",
+  };
 
   const DEFAULT_EVENTS = [
     ["lunar", "1", "1", "旧正月節・弥勒祖師聖誕日"],
@@ -220,14 +197,13 @@
     setWarnings(["内閣府の祝日CSVを取得しています。"], true);
 
     try {
-      const text = await fetchText(HOLIDAY_CSV_URL);
-      elements.holidays.value = convertHolidayCsv(text, year);
+      elements.holidays.value = await fetchOfficialCsv("holidays", year);
       activateTab("holidays");
       setWarnings([`${year}年の祝日CSVを取得しました。`], true);
     } catch (error) {
       setWarnings([
-        "ブラウザから内閣府CSVを取得できませんでした。",
-        "ターミナルで node tools/fetch-official-data.mjs 2027 のように実行してください。",
+        "祝日CSVを取得できませんでした。",
+        "Cloudflare Pagesの公開URLから開くか、確認済みCSVを読み込んでください。",
         String(error.message || error),
       ], false);
     }
@@ -243,14 +219,13 @@
     setWarnings(["国立天文台の暦要項から24節気を取得しています。"], true);
 
     try {
-      const text = await fetchText(getNaojTermsUrl(year));
-      elements.terms.value = convertSolarTermsHtml(text, year);
+      elements.terms.value = await fetchOfficialCsv("terms", year);
       activateTab("terms");
       setWarnings([`${year}年の24節気CSVを取得しました。取得後も暦要項と照合してください。`], true);
     } catch (error) {
       setWarnings([
-        "ブラウザから国立天文台の暦要項を取得できませんでした。",
-        "ターミナルで node tools/fetch-official-data.mjs 2027 のように実行してください。",
+        "国立天文台の暦要項を取得できませんでした。",
+        "Cloudflare Pagesの公開URLから開くか、確認済みCSVを読み込んでください。",
         String(error.message || error),
       ], false);
     }
@@ -445,90 +420,16 @@
     return [...header, ...rows].join("\n");
   }
 
-  async function fetchText(url) {
-    const response = await fetch(url);
+  async function fetchOfficialCsv(kind, year) {
+    if (location.protocol !== "http:" && location.protocol !== "https:") {
+      throw new Error("公式データ取得はCloudflare Pagesの公開URLから利用してください。");
+    }
+
+    const response = await fetch(`${OFFICIAL_API[kind]}?year=${encodeURIComponent(year)}`);
     if (!response.ok) {
       throw new Error(`${response.status} ${response.statusText}`);
     }
-    const buffer = await response.arrayBuffer();
-    return decodeText(buffer);
-  }
-
-  function decodeText(buffer) {
-    const utf8 = new TextDecoder("utf-8").decode(buffer);
-    if (!utf8.includes("�")) return utf8;
-    return new TextDecoder("shift_jis").decode(buffer);
-  }
-
-  function convertHolidayCsv(text, year) {
-    const rows = parseCsvRows(text);
-    const output = [["date", "name"]];
-
-    rows.slice(1).forEach((row) => {
-      const date = normalizeDate(row[0]);
-      const name = row[1];
-      if (date && name && Number(date.slice(0, 4)) === year) {
-        output.push([date, name]);
-      }
-    });
-
-    if (output.length === 1) {
-      throw new Error(`${year}年の祝日が見つかりませんでした。`);
-    }
-
-    return toCsv(output);
-  }
-
-  function convertSolarTermsHtml(html, year) {
-    const text = htmlToText(html);
-    const output = [["date", "name"]];
-
-    SOLAR_TERMS.forEach((name) => {
-      const match = text.match(new RegExp(`${escapeRegExp(name)}\\s+(?:\\d+度\\s+)?(\\d{1,2})月\\s*(\\d{1,2})日`));
-      if (match) {
-        output.push([`${year}-${pad2(match[1])}-${pad2(match[2])}`, name]);
-      }
-    });
-
-    if (output.length !== SOLAR_TERMS.length + 1) {
-      throw new Error(`24節気の抽出数が ${output.length - 1} 件でした。`);
-    }
-
-    return toCsv(output);
-  }
-
-  function parseCsvRows(text) {
-    return text
-      .replace(/^\uFEFF/, "")
-      .trim()
-      .split(/\r?\n/)
-      .filter(Boolean)
-      .map(splitCsvLine);
-  }
-
-  function htmlToText(html) {
-    return html
-      .replace(/<script[\s\S]*?<\/script>/gi, " ")
-      .replace(/<style[\s\S]*?<\/style>/gi, " ")
-      .replace(/<[^>]+>/g, " ")
-      .replace(/&nbsp;/g, " ")
-      .replace(/&amp;/g, "&")
-      .replace(/\s+/g, " ")
-      .trim();
-  }
-
-  function getNaojTermsUrl(year) {
-    const yy = String(year - 2000).padStart(2, "0");
-    return `https://eco.mtk.nao.ac.jp/koyomi/yoko/${year}/rekiyou${yy}2.html`;
-  }
-
-  function toCsv(rows) {
-    return rows.map((row) => row.map(escapeCsv).join(",")).join("\n");
-  }
-
-  function escapeCsv(value) {
-    const text = String(value);
-    return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+    return response.text();
   }
 
   function rowsByDate(rows, valueKey, warnings, label) {
@@ -664,10 +565,6 @@
 
   function isSupportedYear(year) {
     return Number.isInteger(year) && year >= 1900 && year <= 2100;
-  }
-
-  function escapeRegExp(value) {
-    return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   }
 
   function toDateKey(date) {

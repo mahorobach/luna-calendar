@@ -39,13 +39,26 @@ https://github.com/mahorobach/luna-calendar.git
 
 ### 開き方
 
-`index.html` をブラウザで開きます。インストールやサーバー起動は不要です。
+Cloudflare Pagesに公開したURLをブラウザで開きます。
+
+```text
+https://<project-name>.pages.dev/
+```
+
+`index.html` を直接開くこともできますが、その場合は公式データ取得ボタンではなく、確認済みCSVの貼り付けまたはCSV読込を使います。
+
+Cloudflare Pagesでは、以下のFunctionsが公式データ取得に使われます。
+
+```text
+/api/holidays?year=2027
+/api/solar-terms?year=2027
+```
 
 ### 入力CSV
 
-画面の「公式データ取得」から、対象年の祝日と24節気を取得できます。
+Cloudflare Pagesで開いた画面の「公式データ取得」から、対象年の祝日と24節気を取得できます。
 
-ブラウザの制限で取得できない場合は、ターミナルで以下を実行します。
+CSVファイルだけを作りたい場合は、ターミナルで以下を実行します。
 
 ```bash
 node tools/fetch-official-data.mjs 2027
@@ -105,7 +118,8 @@ gregorian,1,1,［丁未年］
 ### 現在の実装状況
 
 - `index.html`、`styles.css`、`app.js` で構成された静的Webアプリ。
-- サーバーやインストールなしで、ブラウザから直接開いて使用できる。
+- Cloudflare Pagesで公開し、Functions経由で祝日と24節気を取得できる。
+- ブラウザから直接開く場合は、公式データ取得ではなくCSV入力を使う。
 - 祝日、24節気、旧暦、年間行事のCSV入力に対応。
 - 1か月分または12か月分の `weekday.txt`、`youbi.txt`、`kyureki.txt`、`cell.txt` を生成。
 - 生成結果は画面上で確認し、コピーまたは `.txt` 保存できる。
