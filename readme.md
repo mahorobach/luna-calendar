@@ -33,6 +33,10 @@ AIは文章整形、形式チェック、差分確認の補助として使用し
 
 このリポジトリには、Illustratorへ流し込むためのテキストを作る簡易Webアプリを含みます。
 
+GitHubリポジトリ:
+
+https://github.com/mahorobach/luna-calendar.git
+
 ### 開き方
 
 `index.html` をブラウザで開きます。インストールやサーバー起動は不要です。
@@ -79,3 +83,12 @@ gregorian,1,1,［丁未年］
 - `cell.txt`
 
 旧暦表記は `rules.md` の表記ルールに従います。24節気・祝日・旧暦の日付そのものは自動推測せず、入力CSVの確認済みデータを使用します。
+
+### 現在の実装状況
+
+- `index.html`、`styles.css`、`app.js` で構成された静的Webアプリ。
+- サーバーやインストールなしで、ブラウザから直接開いて使用できる。
+- 祝日、24節気、旧暦、年間行事のCSV入力に対応。
+- 1か月分または12か月分の `weekday.txt`、`youbi.txt`、`kyureki.txt`、`cell.txt` を生成。
+- 生成結果は画面上で確認し、コピーまたは `.txt` 保存できる。
+- JavaScriptの構文確認は `node --check app.js` で実施済み。
