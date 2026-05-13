@@ -327,7 +327,8 @@
     }
 
     const data = readInputData(warnings);
-    const outputs = months.map((month) => buildMonth(year, month, data, warnings));
+    const includeMonthHeader = months.length > 1;
+    const outputs = months.map((month) => buildMonth(year, month, data, warnings, includeMonthHeader));
 
     elements.weekday.value = outputs.map((output) => output.weekday).join("\n\n");
     elements.youbi.value = outputs.map((output) => output.youbi).join("\n\n");
@@ -352,7 +353,7 @@
     };
   }
 
-  function buildMonth(year, month, data, warnings) {
+  function buildMonth(year, month, data, warnings, includeMonthHeader) {
     const days = daysInMonth(year, month);
     const rows = [];
 
@@ -363,7 +364,7 @@
       const holidayNames = data.holidays.get(date) || [];
       const termNames = [
         ...(data.terms.get(date) || []),
-        ...getCalendarTermLikeNames(year, month, day),
+        ...getCalendarTermLikeNames(date, year, month, day, data.terms),
       ];
       const seasonNames = getHiganNames(date, data.terms);
       const eventNames = getEventNames(date, lunar, data.events, data.lunar);
@@ -387,16 +388,16 @@
     }
 
     return {
-      weekday: buildWeekdayText(month, rows),
-      youbi: buildYoubiText(month, rows),
-      kyurekiCal: buildKyurekiCalText(month, rows),
+      weekday: buildWeekdayText(month, rows, includeMonthHeader),
+      youbi: buildYoubiText(month, rows, includeMonthHeader),
+      kyurekiCal: buildKyurekiCalText(month, rows, includeMonthHeader),
       kyureki: buildKyurekiListText(rows),
-      cell: buildCellText(month, rows),
+      cell: buildCellText(month, rows, includeMonthHeader),
     };
   }
 
-  function buildWeekdayText(month, rows) {
-    const lines = [monthHeader(month)];
+  function buildWeekdayText(month, rows, includeMonthHeader) {
+    const lines = includeMonthHeader ? [monthHeader(month)] : [];
     rows.forEach((row) => {
       lines.push(`${row.day}${row.termNames.map((name) => `\t【${name}】`).join("")}`);
       lines.push(row.weekday);
@@ -404,8 +405,8 @@
     return lines.join("\n");
   }
 
-  function buildYoubiText(month, rows) {
-    const lines = [monthHeader(month)];
+  function buildYoubiText(month, rows, includeMonthHeader) {
+    const lines = includeMonthHeader ? [monthHeader(month)] : [];
     rows.forEach((row) => {
       const top = [
         ...row.holidayNames.map((name) => `[${name}]`),
@@ -418,8 +419,8 @@
     return lines.join("\n");
   }
 
-  function buildKyurekiCalText(month, rows) {
-    const lines = [monthHeader(month)];
+  function buildKyurekiCalText(month, rows, includeMonthHeader) {
+    const lines = includeMonthHeader ? [monthHeader(month)] : [];
     rows.forEach((row, index) => {
       const content = [...row.worship, ...row.eventNames, row.lunarText].filter(Boolean);
       lines.push(content.join("\n"));
@@ -442,8 +443,8 @@
     return lines.join("\n");
   }
 
-  function buildCellText(month, rows) {
-    const lines = [monthHeader(month)];
+  function buildCellText(month, rows, includeMonthHeader) {
+    const lines = includeMonthHeader ? [monthHeader(month)] : [];
     rows.forEach((row) => {
       const top = [
         String(row.day),
@@ -636,13 +637,25 @@
     return names;
   }
 
-  function getCalendarTermLikeNames(year, month, day) {
+  function getCalendarTermLikeNames(date, year, month, day, terms) {
     const names = [];
+    if (isDayBeforeTerm(date, terms, "立春")) names.push("節分");
+    if (month === 3 && day === 3) names.push("ひな祭り");
     if (month === 5 && day === nthWeekdayOfMonth(year, 5, 0, 2)) names.push("母の日");
     if (month === 6 && day === nthWeekdayOfMonth(year, 6, 0, 3)) names.push("父の日");
     if (month === 11 && day === 15) names.push("七五三");
     if (month === 12 && day === 25) names.push("クリスマス");
     return names;
+  }
+
+  function isDayBeforeTerm(date, terms, termName) {
+    for (const [termDate, termNames] of terms.entries()) {
+      if (!termNames.includes(termName)) continue;
+      const base = new Date(`${termDate}T00:00:00`);
+      const target = new Date(`${date}T00:00:00`);
+      return Math.round((target - base) / 86400000) === -1;
+    }
+    return false;
   }
 
   function nthWeekdayOfMonth(year, month, weekday, ordinal) {
