@@ -46,7 +46,18 @@
           </label>
         </div>
         <p class="note">
-          旧暦・24節気・祝日は、確認済みデータをCSVで入れてください。アプリは日付を推測せず、整形と統合だけ行います。
+          祝日は内閣府CSV、24節気は国立天文台の暦要項から取得できます。旧暦は確認済みCSVを入力してください。
+        </p>
+      </section>
+
+      <section class="panel source-panel" aria-labelledby="source-heading">
+        <h2 id="source-heading">公式データ取得</h2>
+        <div class="source-actions">
+          <button id="fetchHolidaysButton" type="button">祝日を取得</button>
+          <button id="fetchTermsButton" type="button">24節気を取得</button>
+        </div>
+        <p class="note">
+          ブラウザの制限で取得できない場合は、ターミナルで <code>node tools/fetch-official-data.mjs 2027</code> を実行します。
         </p>
       </section>
 
@@ -66,10 +77,10 @@
         <div class="tab-panel active" id="panel-holidays">
           <div class="import-row">
             <label class="file-button">
-              CSV読込
-              <input type="file" accept=".csv,text/csv" data-file-target="holidaysInput">
+              CSV複数読込
+              <input type="file" accept=".csv,text/csv" data-file-target="holidaysInput" multiple>
             </label>
-            <p>列: <code>date,name</code></p>
+            <p>列: <code>date,name</code> / 追加読込可</p>
           </div>
           <textarea id="holidaysInput" spellcheck="false" placeholder="date,name&#10;2027-01-01,元日"></textarea>
         </div>
@@ -77,10 +88,10 @@
         <div class="tab-panel" id="panel-terms">
           <div class="import-row">
             <label class="file-button">
-              CSV読込
-              <input type="file" accept=".csv,text/csv" data-file-target="termsInput">
+              CSV複数読込
+              <input type="file" accept=".csv,text/csv" data-file-target="termsInput" multiple>
             </label>
-            <p>列: <code>date,name</code></p>
+            <p>列: <code>date,name</code> / 追加読込可</p>
           </div>
           <textarea id="termsInput" spellcheck="false" placeholder="date,name&#10;2027-01-05,小寒"></textarea>
         </div>
@@ -88,10 +99,10 @@
         <div class="tab-panel" id="panel-lunar">
           <div class="import-row">
             <label class="file-button">
-              CSV読込
-              <input type="file" accept=".csv,text/csv" data-file-target="lunarInput">
+              CSV複数読込
+              <input type="file" accept=".csv,text/csv" data-file-target="lunarInput" multiple>
             </label>
-            <p>列: <code>date,lunar_month,lunar_day,leap</code></p>
+            <p>列: <code>date,lunar_month,lunar_day,leap</code> / 追加読込可</p>
           </div>
           <textarea id="lunarInput" spellcheck="false" placeholder="date,lunar_month,lunar_day,leap&#10;2027-01-01,12,24,false"></textarea>
         </div>
@@ -99,10 +110,10 @@
         <div class="tab-panel" id="panel-events">
           <div class="import-row">
             <label class="file-button">
-              CSV読込
-              <input type="file" accept=".csv,text/csv" data-file-target="eventsInput">
+              CSV複数読込
+              <input type="file" accept=".csv,text/csv" data-file-target="eventsInput" multiple>
             </label>
-            <p>列: <code>type,month,day,name</code> または <code>date,name</code></p>
+            <p>列: <code>type,month,day,name</code> または <code>date,name</code> / 追加読込可</p>
           </div>
           <textarea id="eventsInput" spellcheck="false" placeholder="type,month,day,name&#10;lunar,1,1,旧正月節・弥勒祖師聖誕日&#10;gregorian,1,1,［丁未年］"></textarea>
         </div>

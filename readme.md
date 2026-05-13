@@ -43,6 +43,24 @@ https://github.com/mahorobach/luna-calendar.git
 
 ### 入力CSV
 
+画面の「公式データ取得」から、対象年の祝日と24節気を取得できます。
+
+ブラウザの制限で取得できない場合は、ターミナルで以下を実行します。
+
+```bash
+node tools/fetch-official-data.mjs 2027
+```
+
+生成先:
+
+```text
+data/generated/2027/holidays.csv
+data/generated/2027/solar_terms.csv
+```
+
+旧暦CSVは、AJNET（日本カレンダー事務局）などで確認したデータを別途用意してください。
+旧暦の日付はアプリやAIで推測しません。
+
 祝日:
 
 ```csv

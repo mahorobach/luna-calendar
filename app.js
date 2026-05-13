@@ -17,6 +17,33 @@
   ];
   const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
   const KYUREKI_SPACER = "\t\t\t\t\t\t\t";
+  const HOLIDAY_CSV_URL = "https://www8.cao.go.jp/chosei/shukujitsu/syukujitsu.csv";
+  const SOLAR_TERMS = [
+    "小寒",
+    "大寒",
+    "立春",
+    "雨水",
+    "啓蟄",
+    "春分",
+    "清明",
+    "穀雨",
+    "立夏",
+    "小満",
+    "芒種",
+    "夏至",
+    "小暑",
+    "大暑",
+    "立秋",
+    "処暑",
+    "白露",
+    "秋分",
+    "寒露",
+    "霜降",
+    "立冬",
+    "小雪",
+    "大雪",
+    "冬至",
+  ];
 
   const DEFAULT_EVENTS = [
     ["lunar", "1", "1", "旧正月節・弥勒祖師聖誕日"],
@@ -109,6 +136,8 @@
   document.getElementById("generateButton").addEventListener("click", generate);
   document.getElementById("loadSampleButton").addEventListener("click", loadSample);
   document.getElementById("clearDataButton").addEventListener("click", clearData);
+  document.getElementById("fetchHolidaysButton").addEventListener("click", fetchOfficialHolidays);
+  document.getElementById("fetchTermsButton").addEventListener("click", fetchOfficialTerms);
 
   document.querySelectorAll(".tab").forEach((button) => {
     button.addEventListener("click", () => activateTab(button.dataset.target));
@@ -116,10 +145,12 @@
 
   document.querySelectorAll("input[type='file'][data-file-target]").forEach((input) => {
     input.addEventListener("change", async () => {
-      const file = input.files && input.files[0];
-      if (!file) return;
+      const files = Array.from(input.files || []);
+      if (files.length === 0) return;
       const target = document.getElementById(input.dataset.fileTarget);
-      target.value = await file.text();
+      const importedTexts = await Promise.all(files.map((file) => file.text()));
+      target.value = combineCsvTexts([target.value, ...importedTexts]);
+      setWarnings([`${files.length}個のCSVを読み込みました。`], true);
       input.value = "";
     });
   });
@@ -179,6 +210,52 @@
     setWarnings(["入力を空にしました。"], false);
   }
 
+  async function fetchOfficialHolidays() {
+    const year = Number(elements.year.value);
+    if (!isSupportedYear(year)) {
+      setWarnings(["年を1900〜2100の範囲で入力してください。"], false);
+      return;
+    }
+
+    setWarnings(["内閣府の祝日CSVを取得しています。"], true);
+
+    try {
+      const text = await fetchText(HOLIDAY_CSV_URL);
+      elements.holidays.value = convertHolidayCsv(text, year);
+      activateTab("holidays");
+      setWarnings([`${year}年の祝日CSVを取得しました。`], true);
+    } catch (error) {
+      setWarnings([
+        "ブラウザから内閣府CSVを取得できませんでした。",
+        "ターミナルで node tools/fetch-official-data.mjs 2027 のように実行してください。",
+        String(error.message || error),
+      ], false);
+    }
+  }
+
+  async function fetchOfficialTerms() {
+    const year = Number(elements.year.value);
+    if (!isSupportedYear(year)) {
+      setWarnings(["年を1900〜2100の範囲で入力してください。"], false);
+      return;
+    }
+
+    setWarnings(["国立天文台の暦要項から24節気を取得しています。"], true);
+
+    try {
+      const text = await fetchText(getNaojTermsUrl(year));
+      elements.terms.value = convertSolarTermsHtml(text, year);
+      activateTab("terms");
+      setWarnings([`${year}年の24節気CSVを取得しました。取得後も暦要項と照合してください。`], true);
+    } catch (error) {
+      setWarnings([
+        "ブラウザから国立天文台の暦要項を取得できませんでした。",
+        "ターミナルで node tools/fetch-official-data.mjs 2027 のように実行してください。",
+        String(error.message || error),
+      ], false);
+    }
+  }
+
   function generate() {
     const year = Number(elements.year.value);
     const months = elements.month.value === "all"
@@ -186,7 +263,7 @@
       : [Number(elements.month.value)];
     const warnings = [];
 
-    if (!Number.isInteger(year) || year < 1900 || year > 2100) {
+    if (!isSupportedYear(year)) {
       setWarnings(["年を1900〜2100の範囲で入力してください。"], false);
       return;
     }
@@ -351,6 +428,109 @@
     return cells;
   }
 
+  function combineCsvTexts(texts) {
+    const header = [];
+    const rows = [];
+
+    texts.forEach((text) => {
+      const lines = text
+        .replace(/^\uFEFF/, "")
+        .split(/\r?\n/)
+        .filter((line) => line.trim() !== "");
+      if (lines.length === 0) return;
+      if (header.length === 0) header.push(lines[0]);
+      rows.push(...lines.slice(1));
+    });
+
+    return [...header, ...rows].join("\n");
+  }
+
+  async function fetchText(url) {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`${response.status} ${response.statusText}`);
+    }
+    const buffer = await response.arrayBuffer();
+    return decodeText(buffer);
+  }
+
+  function decodeText(buffer) {
+    const utf8 = new TextDecoder("utf-8").decode(buffer);
+    if (!utf8.includes("�")) return utf8;
+    return new TextDecoder("shift_jis").decode(buffer);
+  }
+
+  function convertHolidayCsv(text, year) {
+    const rows = parseCsvRows(text);
+    const output = [["date", "name"]];
+
+    rows.slice(1).forEach((row) => {
+      const date = normalizeDate(row[0]);
+      const name = row[1];
+      if (date && name && Number(date.slice(0, 4)) === year) {
+        output.push([date, name]);
+      }
+    });
+
+    if (output.length === 1) {
+      throw new Error(`${year}年の祝日が見つかりませんでした。`);
+    }
+
+    return toCsv(output);
+  }
+
+  function convertSolarTermsHtml(html, year) {
+    const text = htmlToText(html);
+    const output = [["date", "name"]];
+
+    SOLAR_TERMS.forEach((name) => {
+      const match = text.match(new RegExp(`${escapeRegExp(name)}\\s+(?:\\d+度\\s+)?(\\d{1,2})月\\s*(\\d{1,2})日`));
+      if (match) {
+        output.push([`${year}-${pad2(match[1])}-${pad2(match[2])}`, name]);
+      }
+    });
+
+    if (output.length !== SOLAR_TERMS.length + 1) {
+      throw new Error(`24節気の抽出数が ${output.length - 1} 件でした。`);
+    }
+
+    return toCsv(output);
+  }
+
+  function parseCsvRows(text) {
+    return text
+      .replace(/^\uFEFF/, "")
+      .trim()
+      .split(/\r?\n/)
+      .filter(Boolean)
+      .map(splitCsvLine);
+  }
+
+  function htmlToText(html) {
+    return html
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;/g, " ")
+      .replace(/&amp;/g, "&")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function getNaojTermsUrl(year) {
+    const yy = String(year - 2000).padStart(2, "0");
+    return `https://eco.mtk.nao.ac.jp/koyomi/yoko/${year}/rekiyou${yy}2.html`;
+  }
+
+  function toCsv(rows) {
+    return rows.map((row) => row.map(escapeCsv).join(",")).join("\n");
+  }
+
+  function escapeCsv(value) {
+    const text = String(value);
+    return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+  }
+
   function rowsByDate(rows, valueKey, warnings, label) {
     const map = new Map();
     rows.forEach((row) => {
@@ -472,10 +652,22 @@
 
   function normalizeDate(value) {
     if (!value) return "";
-    const normalized = String(value).trim().replace(/\//g, "-");
+    const normalized = String(value)
+      .trim()
+      .replace(/[年月]/g, "-")
+      .replace(/日/g, "")
+      .replace(/\//g, "-");
     const match = normalized.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
     if (!match) return "";
     return `${match[1]}-${pad2(match[2])}-${pad2(match[3])}`;
+  }
+
+  function isSupportedYear(year) {
+    return Number.isInteger(year) && year >= 1900 && year <= 2100;
+  }
+
+  function escapeRegExp(value) {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   }
 
   function toDateKey(date) {
