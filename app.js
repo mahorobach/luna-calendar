@@ -19,6 +19,7 @@
   const KYUREKI_SPACER = "\t\t\t\t\t\t\t";
   const OFFICIAL_API = {
     holidays: "/api/holidays",
+    lunar: "/api/lunar",
     terms: "/api/solar-terms",
   };
 
@@ -115,6 +116,7 @@
   document.getElementById("clearDataButton").addEventListener("click", clearData);
   document.getElementById("fetchHolidaysButton").addEventListener("click", fetchOfficialHolidays);
   document.getElementById("fetchTermsButton").addEventListener("click", fetchOfficialTerms);
+  document.getElementById("fetchLunarButton").addEventListener("click", fetchOfficialLunar);
 
   document.querySelectorAll(".tab").forEach((button) => {
     button.addEventListener("click", () => activateTab(button.dataset.target));
@@ -225,6 +227,40 @@
     } catch (error) {
       setWarnings([
         "国立天文台の暦要項を取得できませんでした。",
+        "Cloudflare Pagesの公開URLから開くか、確認済みCSVを読み込んでください。",
+        String(error.message || error),
+      ], false);
+    }
+  }
+
+  async function fetchOfficialLunar() {
+    const year = Number(elements.year.value);
+    if (!isSupportedYear(year)) {
+      setWarnings(["年を1900〜2100の範囲で入力してください。"], false);
+      return;
+    }
+
+    const months = elements.month.value === "all"
+      ? Array.from({ length: 12 }, (_, index) => index + 1)
+      : [Number(elements.month.value)];
+
+    setWarnings(["Japanese Calendar APIから旧暦CSVを取得しています。"], true);
+
+    try {
+      const csvTexts = [];
+      for (const month of months) {
+        setWarnings([`${year}年${month}月の旧暦CSVを取得しています。`], true);
+        csvTexts.push(await fetchOfficialCsv("lunar", year, { month }));
+      }
+      elements.lunar.value = combineCsvTexts(csvTexts);
+      activateTab("lunar");
+      setWarnings([
+        `${year}年${elements.month.value === "all" ? "12か月分" : `${months[0]}月`}の旧暦CSVを取得しました。`,
+        "旧暦1日・15日、旧正月、旧大晦日は念のため照合してください。",
+      ], true);
+    } catch (error) {
+      setWarnings([
+        "旧暦CSVを取得できませんでした。",
         "Cloudflare Pagesの公開URLから開くか、確認済みCSVを読み込んでください。",
         String(error.message || error),
       ], false);
@@ -420,12 +456,16 @@
     return [...header, ...rows].join("\n");
   }
 
-  async function fetchOfficialCsv(kind, year) {
+  async function fetchOfficialCsv(kind, year, params) {
     if (location.protocol !== "http:" && location.protocol !== "https:") {
       throw new Error("公式データ取得はCloudflare Pagesの公開URLから利用してください。");
     }
 
-    const response = await fetch(`${OFFICIAL_API[kind]}?year=${encodeURIComponent(year)}`);
+    const query = new URLSearchParams({ year: String(year) });
+    Object.entries(params || {}).forEach(([key, value]) => {
+      if (value != null) query.set(key, String(value));
+    });
+    const response = await fetch(`${OFFICIAL_API[kind]}?${query.toString()}`);
     if (!response.ok) {
       throw new Error(`${response.status} ${response.statusText}`);
     }

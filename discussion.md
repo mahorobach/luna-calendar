@@ -217,7 +217,8 @@ main
 - 「公式データ取得」欄を追加。
 - 「祝日を取得」ボタンで内閣府の祝日CSVを取得し、`date,name` 形式へ変換する。
 - 「24節気を取得」ボタンで国立天文台の暦要項HTMLを取得し、24節気を `date,name` 形式へ変換する。
-- Cloudflare Pages Functionsの `/api/holidays` と `/api/solar-terms` を使う。
+- 「旧暦を取得」ボタンでJapanese Calendar APIの旧暦データを取得し、`date,lunar_month,lunar_day,leap` 形式へ変換する。
+- Cloudflare Pages Functionsの `/api/holidays`、`/api/solar-terms`、`/api/lunar` を使う。
 
 補助スクリプト:
 
@@ -242,8 +243,8 @@ data/generated/2027/solar_terms.csv
 画面の公式データ取得ボタンを使う場合は、Cloudflare Pages Functions経由で取得する。
 CSVファイルだけを生成する場合はNodeスクリプトを使う。
 
-旧暦については、公式または信頼できる機械読み取りCSVが安定して取得できる状態ではないため、自動推測は実装しない。
-AJNETなどで確認した旧暦CSVを入力する方針を維持する。
+旧暦については、Japanese Calendar APIから取得する。
+ただし旧暦1日・15日、旧正月、旧大晦日、閏月の扱いは、AJNETなどの旧暦対応カレンダーで照合する。
 
 Gemini 3.1 Flash-LiteなどのAIは、日付確定には使わない。
 使う場合は、PDFやHTMLからCSV形式へ整える補助、表記ゆれの整理、欠落チェックなどに限定する。

@@ -67,6 +67,23 @@ export async function fetchOfficialSolarTermsCsv(targetYear) {
   return toCsv(output);
 }
 
+export async function fetchOfficialLunarCsv(targetYear, targetMonth) {
+  if (!Number.isInteger(targetMonth) || targetMonth < 1 || targetMonth > 12) {
+    throw new Error("month must be an integer from 1 to 12");
+  }
+
+  const output = [["date", "lunar_month", "lunar_day", "leap"]];
+  const days = daysInMonth(targetYear, targetMonth);
+
+  for (let day = 1; day <= days; day += 1) {
+    const date = `${targetYear}-${pad2(targetMonth)}-${pad2(day)}`;
+    const lunar = await fetchJapaneseCalendarLunar(date);
+    output.push([date, lunar.month, lunar.day, lunar.leap ? "true" : "false"]);
+  }
+
+  return toCsv(output);
+}
+
 export function getYearFromRequest(request) {
   const url = new URL(request.url);
   const year = Number(url.searchParams.get("year"));
@@ -74,6 +91,15 @@ export function getYearFromRequest(request) {
     throw new Error("year must be an integer from 1900 to 2100");
   }
   return year;
+}
+
+export function getMonthFromRequest(request) {
+  const url = new URL(request.url);
+  const month = Number(url.searchParams.get("month"));
+  if (!Number.isInteger(month) || month < 1 || month > 12) {
+    throw new Error("month must be an integer from 1 to 12");
+  }
+  return month;
 }
 
 export function csvResponse(csv) {
@@ -107,6 +133,51 @@ async function fetchText(url) {
   const utf8 = new TextDecoder("utf-8").decode(buffer);
   if (!utf8.includes("�")) return utf8;
   return new TextDecoder("shift_jis").decode(buffer);
+}
+
+async function fetchJson(url) {
+  const response = await fetch(url, {
+    headers: {
+      "Accept": "application/json",
+    },
+  });
+  if (!response.ok) {
+    throw new Error(`Fetch failed: ${response.status} ${url}`);
+  }
+  return response.json();
+}
+
+async function fetchJapaneseCalendarLunar(date) {
+  const data = await fetchJson(`https://api.jp-calendar.com/v1/lunar/${date}`);
+  const lunar = data.lunar || data;
+  const month = Number(
+    lunar.lunar_month
+      ?? lunar.month
+      ?? lunar.month_number
+      ?? lunar.lunarMonth
+      ?? lunar.lunar?.month
+  );
+  const day = Number(
+    lunar.lunar_day
+      ?? lunar.day
+      ?? lunar.day_number
+      ?? lunar.lunarDay
+      ?? lunar.lunar?.day
+  );
+  const leap = Boolean(
+    lunar.leap
+      ?? lunar.is_leap
+      ?? lunar.isLeap
+      ?? lunar.leap_month
+      ?? lunar.is_leap_month
+      ?? false
+  );
+
+  if (!Number.isInteger(month) || !Number.isInteger(day)) {
+    throw new Error(`旧暦レスポンスを解釈できませんでした: ${date}`);
+  }
+
+  return { month, day, leap };
 }
 
 function getNaojTermsUrl(targetYear) {
@@ -169,6 +240,10 @@ function normalizeDate(value) {
   const match = normalized.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
   if (!match) return "";
   return `${match[1]}-${pad2(match[2])}-${pad2(match[3])}`;
+}
+
+function daysInMonth(year, month) {
+  return new Date(year, month, 0).getDate();
 }
 
 function toCsv(rows) {

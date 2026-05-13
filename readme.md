@@ -52,11 +52,12 @@ Cloudflare Pagesでは、以下のFunctionsが公式データ取得に使われ�
 ```text
 /api/holidays?year=2027
 /api/solar-terms?year=2027
+/api/lunar?year=2027&month=1
 ```
 
 ### 入力CSV
 
-Cloudflare Pagesで開いた画面の「公式データ取得」から、対象年の祝日と24節気を取得できます。
+Cloudflare Pagesで開いた画面の「公式データ取得」から、対象年の祝日、24節気、旧暦を取得できます。
 
 CSVファイルだけを作りたい場合は、ターミナルで以下を実行します。
 
@@ -71,8 +72,8 @@ data/generated/2027/holidays.csv
 data/generated/2027/solar_terms.csv
 ```
 
-旧暦CSVは、AJNET（日本カレンダー事務局）などで確認したデータを別途用意してください。
-旧暦の日付はアプリやAIで推測しません。
+旧暦CSVは、Japanese Calendar APIから取得したデータをアプリ用CSVへ変換します。
+取得後は、AJNET（日本カレンダー事務局）などで旧暦1日・15日、旧正月、旧大晦日を照合してください。
 
 祝日:
 
@@ -118,7 +119,7 @@ gregorian,1,1,［丁未年］
 ### 現在の実装状況
 
 - `index.html`、`styles.css`、`app.js` で構成された静的Webアプリ。
-- Cloudflare Pagesで公開し、Functions経由で祝日と24節気を取得できる。
+- Cloudflare Pagesで公開し、Functions経由で祝日、24節気、旧暦を取得できる。
 - ブラウザから直接開く場合は、公式データ取得ではなくCSV入力を使う。
 - 祝日、24節気、旧暦、年間行事のCSV入力に対応。
 - 1か月分または12か月分の `weekday.txt`、`youbi.txt`、`kyureki.txt`、`cell.txt` を生成。
