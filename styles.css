@@ -89,6 +89,16 @@ button.primary:hover {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;
+  margin-top: 10px;
+}
+
+.source-main-button {
+  width: 100%;
+}
+
+.source-actions button {
+  padding: 6px 8px;
+  font-size: 12px;
 }
 
 .layout {

@@ -115,6 +115,7 @@
   document.getElementById("generateButton").addEventListener("click", generate);
   document.getElementById("loadSampleButton").addEventListener("click", loadSample);
   document.getElementById("clearDataButton").addEventListener("click", clearData);
+  document.getElementById("fetchAllOfficialButton").addEventListener("click", fetchAllOfficialData);
   document.getElementById("fetchHolidaysButton").addEventListener("click", fetchOfficialHolidays);
   document.getElementById("fetchTermsButton").addEventListener("click", fetchOfficialTerms);
   document.getElementById("fetchLunarButton").addEventListener("click", fetchOfficialLunar);
@@ -191,6 +192,41 @@
     setWarnings(["入力を空にしました。"], false);
   }
 
+  async function fetchAllOfficialData() {
+    const year = Number(elements.year.value);
+    if (!isSupportedYear(year)) {
+      setWarnings(["年を1900〜2100の範囲で入力してください。"], false);
+      return;
+    }
+
+    const status = [];
+    setWarnings(["公式データを取得しています。"], true);
+
+    await runOfficialFetch(status, "祝日", async () => {
+      elements.holidays.value = await fetchOfficialCsv("holidays", year);
+    });
+    await runOfficialFetch(status, "24節気", async () => {
+      elements.terms.value = await fetchOfficialCsv("terms", year);
+    });
+    await runOfficialFetch(status, "旧暦", async () => {
+      elements.lunar.value = await fetchLunarCsvForSelection(year);
+    });
+
+    const failed = status.some((item) => item.includes("取得できませんでした"));
+    setWarnings(status, !failed);
+    if (!failed) activateTab("lunar");
+  }
+
+  async function runOfficialFetch(status, label, fetcher) {
+    try {
+      setWarnings([`${label}を取得しています。`], true);
+      await fetcher();
+      status.push(`${label}を取得しました。`);
+    } catch (error) {
+      status.push(`${label}を取得できませんでした: ${String(error.message || error)}`);
+    }
+  }
+
   async function fetchOfficialHolidays() {
     const year = Number(elements.year.value);
     if (!isSupportedYear(year)) {
@@ -242,22 +278,13 @@
       return;
     }
 
-    const months = elements.month.value === "all"
-      ? Array.from({ length: 12 }, (_, index) => index + 1)
-      : [Number(elements.month.value)];
-
     setWarnings(["Japanese Calendar APIから旧暦CSVを取得しています。"], true);
 
     try {
-      const csvTexts = [];
-      for (const month of months) {
-        setWarnings([`${year}年${month}月の旧暦CSVを取得しています。`], true);
-        csvTexts.push(await fetchOfficialCsv("lunar", year, { month }));
-      }
-      elements.lunar.value = combineCsvTexts(csvTexts);
+      elements.lunar.value = await fetchLunarCsvForSelection(year);
       activateTab("lunar");
       setWarnings([
-        `${year}年${elements.month.value === "all" ? "12か月分" : `${months[0]}月`}の旧暦CSVを取得しました。`,
+        `${year}年${getSelectedMonthLabel()}の旧暦CSVを取得しました。`,
         "旧暦1日・15日、旧正月、旧大晦日は念のため照合してください。",
       ], true);
     } catch (error) {
@@ -269,11 +296,29 @@
     }
   }
 
-  function generate() {
-    const year = Number(elements.year.value);
-    const months = elements.month.value === "all"
+  async function fetchLunarCsvForSelection(year) {
+    const months = selectedMonths();
+    const csvTexts = [];
+    for (const month of months) {
+      setWarnings([`${year}年${month}月の旧暦CSVを取得しています。`], true);
+      csvTexts.push(await fetchOfficialCsv("lunar", year, { month }));
+    }
+    return combineCsvTexts(csvTexts);
+  }
+
+  function selectedMonths() {
+    return elements.month.value === "all"
       ? Array.from({ length: 12 }, (_, index) => index + 1)
       : [Number(elements.month.value)];
+  }
+
+  function getSelectedMonthLabel() {
+    return elements.month.value === "all" ? "12か月分" : `${elements.month.value}月`;
+  }
+
+  function generate() {
+    const year = Number(elements.year.value);
+    const months = selectedMonths();
     const warnings = [];
 
     if (!isSupportedYear(year)) {
